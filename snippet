@@ -1,0 +1,151 @@
+var previous = [[],[]];
+var write_to = 0;
+var min_usd_amount = 100;
+var period = 60 * 1000
+var since_last_update = 0;
+var show_time_without_update_every = 10 * 60 * 1000;
+
+
+if (!("Notification" in window))
+    console.err("This browser does not support notifications.");
+else 
+    Notification.requestPermission().then((permission) => {handlePermission(permission);});
+
+
+
+const handlePermission = (permission) => {
+    if (Notification.permission === "denied" || Notification.permission === "default") 
+        console.err("Notification is not allowed");
+    else 
+        runNotificator();
+};
+
+const runNotificator = () => {
+    setInterval(()=>{
+
+        fetch("https://api.tinkoff.ru/geo/withdraw/clusters", {
+              "headers": {
+                "accept": "*/*",
+                "accept-language": "en-GB,en-US;q=0.9,en;q=0.8,ru;q=0.7",
+                "content-type": "application/json",
+                "sec-ch-ua": "\" Not A;Brand\";v=\"99\", \"Chromium\";v=\"99\", \"Google Chrome\";v=\"99\"",
+                "sec-ch-ua-mobile": "?0",
+                "sec-ch-ua-platform": "\"Windows\"",
+                "sec-fetch-dest": "empty",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-site": "same-site"
+              },
+              "referrer": "https://www.tinkoff.ru/",
+              "referrerPolicy": "strict-origin-when-cross-origin",
+              "body": "{\"bounds\":{\"bottomLeft\":{\"lat\":59.852654893430106,\"lng\":30.197860508858103},\"topRight\":{\"lat\":60.0448493549832,\"lng\":30.525047093330773}},\"filters\":{\"banks\":[\"tcs\"],\"showUnavailable\":true,\"currencies\":[\"USD\"]},\"zoom\":12}",
+              "method": "POST",
+              "mode": "cors",
+              "credentials": "omit"
+            }).then(
+            function(response) {
+              if (response.status !== 200) {
+                console.log('Looks like there was a problem. Status Code: ' +
+                  response.status);
+                return;
+              }
+              response.json().then(compare);
+            }
+          )
+          .catch(function(err) {
+              console.log('Fetch Error :-S', err);
+          });
+
+    },period);
+};
+
+function amount_increased(cluster1, cluster2){
+
+    return amount(cluster1) > amount(cluster2);
+}
+
+function amount(point){
+    for (let index = 0; index < point.limits.length; index++) {
+        if(point.limits[index].currency == "USD")
+            return point.limits[index].amount;
+    }
+
+    return 0;
+}
+
+function get_date(){
+    var currentdate = new Date(); 
+    var datetime = currentdate.getHours() + ":";
+    
+    if(currentdate.getMinutes() < 10)
+        datetime += "0";
+            
+    datetime += currentdate.getMinutes()
+
+    return datetime;
+}
+
+function compare(data) {
+
+    since_last_update += period;
+    var new_entries = 0;
+    var notification = "";
+
+    for (let index = 0; index < data.payload.clusters.length; index++) {
+        var cluster = data.payload.clusters[index];
+        for (let point_index = 0; point_index < cluster.points.length; point_index++){
+
+            var point = cluster.points[point_index];
+            if(!was_stored_before(point) && amount(point) >= min_usd_amount){
+                        
+                if(new_entries == 0)
+                   console.log(get_date());
+
+                var message = "$" + amount(point) + " " + point.address;
+                console.log(message);
+                notification += message + "\n";
+                new_entries++;
+            }
+        }
+    }
+
+    if(new_entries > 0){
+        since_last_update = 0;
+        new Notification("There are " + new_entries + " new ATM in the area" , { body: notification })
+    }
+       
+    store_fetch_result(data.payload.clusters);
+
+    if(since_last_update > show_time_without_update_every){
+        console.log(get_date());
+        since_last_update = 0;
+    }
+
+  
+}
+
+function store_fetch_result(clusters){
+    write_to++;
+    write_to = write_to%previous.length;
+    previous[write_to] = clusters;
+}
+
+function was_stored_before(point){
+    for (let j = 0; j < previous.length; j++) {
+        var previous_set = previous[j];
+
+        for (let t = 0; t < previous_set.length; t++) {
+            var cluster = previous_set[t];
+             
+            for (let p = 0; p < cluster.points.length; p++) {
+                
+                if(cluster.points[p].id == point.id){
+                    if(!amount_increased(point, cluster.points[p]))
+                        return true;    
+                }
+
+            }
+        }
+    }
+    
+    return false;
+}
