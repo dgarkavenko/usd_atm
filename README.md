@@ -2,7 +2,7 @@
 1. В Google Chrome открываем https://www.tinkoff.ru/maps/atm/
 2. Открыть DevTools: Правой кнопкой вне карты, Inpsect
 3. Переходим на вкладу Sources/Snippets
-4. +New Snippet, копируем код, сохраняем (Command+S/Ctrl+S) 
+4. +New Snippet, копируем код из https://github.com/dgarkavenko/usd_atm_in_the_area/blob/main/snippet, сохраняем (Command+S/Ctrl+S) 
 5. Правой кнопкой по новому сниппету: Run
 6. Оставить страницу открытой в бэкграунде.
 
