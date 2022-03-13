@@ -7,7 +7,8 @@
 3. Переходим на вкладу Sources/Snippets
 4. +New Snippet, копируем код из https://github.com/dgarkavenko/usd_atm_in_the_area/blob/main/snippet, сохраняем (Command+S/Ctrl+S) 
 5. Правой кнопкой по новому сниппету: Run
-6. Оставить вкладку и DevTools открытыми
+6. Разрешить нотификации и оставить вкладку с DevTools открытыми
+<img width="317" alt="image" src="https://user-images.githubusercontent.com/3784583/158057204-1807af93-9cc5-4d51-bb7c-0523e549c244.png">
 
 Через минуту придет нотификация с доступными банкоматами на момент запуска.
 Дальше буду приходить нотификации, в двух случаях:
